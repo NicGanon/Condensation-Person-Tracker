@@ -1,2 +1,6 @@
-Hello, World
-Second line
+This is my final project, and implements the ConDenSation tracking algorithm to track up to two people. It supports depth information provided by stereo cameras, and uses this to improve tracking.
+
+
+Warning
+
+Compiling and running this will be pretty difficult for almost anyone, though I'm looking to change that by making compilation easier (requires the OpenCV library), and providing a set of test data and tools to create more soon.
