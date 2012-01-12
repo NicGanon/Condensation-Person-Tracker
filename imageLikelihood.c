@@ -1,5 +1,5 @@
 /*
-  imageLikelihood.c 
+  imageLikelihood.c  b
   
   Takes an input image, along with backMean and backCov
   Returns a 48x64 likelihood matrix of each patch in the image being background
