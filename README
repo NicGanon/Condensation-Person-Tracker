@@ -1,8 +1,9 @@
-This system implements the ConDenSation algorithm to track up to two people in real time. It also supports depth information provided by stereo cameras, and uses this to improve tracking.
+This project implements a modified version of the ConDenSation algorithm, and can track up to two people in real time. Notably, it supports depth information provided by stereo cameras, and uses this to improve tracking quality.
 A quick video demo can be found at 
 http://www.youtube.com/watch?v=nKA0voHykb0&feature=youtu.be
 
 
-Warning
+- Warning -
 
-Compiling and running this will be pretty difficult for almost anyone, though I'm looking to change that by making compilation easier (requires the OpenCV library), and providing a set of test data and tools to create more soon.
+Compiling and running this will be pretty difficult for almost anyone, so I'm looking to change that. It currently requires the OpenCV library to install, and test data to run upon.
+Later versions will include a test data set, and tools with which to create your own.
