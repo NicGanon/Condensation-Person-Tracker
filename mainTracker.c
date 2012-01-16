@@ -38,12 +38,10 @@
 #include "particleFilter.c"
 #include "imageLikelihood.c"
 
-#include <time.h>
-
+#include <time.h>//
 
 
 unsigned char getPixel( IplImage* stereoFrame, int x, int y );
-
 void drawHeatmap( int maxBox[10], CvMat *imgLikelihood, IplImage* heatFrame );
 
 void drawTrackingBoxes( int personNum, int maxBox[10], 
@@ -56,75 +54,98 @@ void drawPositionTrail( int maxBox[10], int trailLength,
 
                         
 void drawSpecial( CvMat *imgLikelihood, IplImage* specialFrame );
-                 
 
-                 
-int main( int argc, char *argv[] ) {
+void initCaptureFiles( int argc, char *argv[], CvCapture **capture, CvCapture **stereoCapture, int *webcamRun, int *enable3D );
 
-  if( argc < 3 ) {
-    printf("Incorrect arguments:\n");
-    printf("Webcam: mainTracker mean.xml cov.xml\n");
-    printf("2D video: mainTracker mean.xml cov.xml video.avi");
-    printf("3D video: mainTracker mean.xml cov.xml video.avi stereo.avi\n");
-    return(0);
-  }
-  
 
-  //! Create captures - input video and depth file
-  CvCapture *capture = 0;
-  CvCapture *stereoCapture = 0;
-  
-  char locationVideoActual[300];
-  char locationVideoStereo[300];
-  char locationMean[300];
-  char locationCov[300];
-  int webcamRun = 0;
+
+
+// need to return positive or negative
+void initCaptureFiles( int argc, char *argv[], CvCapture **capture, CvCapture **stereoCapture, int *webcamRun, int *enable3D ) {
+    if( argc < 3 ) {;
+        printf("Incorrect arguments:\n");
+        printf("Webcam: mainTracker mean.xml cov.xml\n");
+        printf("2D video: mainTracker mean.xml cov.xml video.avi");
+        printf("3D video: mainTracker mean.xml cov.xml video.avi stereo.avi\n");
+        
+        exit(1);
+    }
+
+
+    char locationVideoActual[300];
+    char locationVideoStereo[300];
     
-  strncpy( locationMean, argv[1], 300 );
-  strncpy( locationCov,  argv[2], 300 );
-  
+    if( argc == 3 ) {
+        printf("Running on webcam\n");
+        *webcamRun = 1;
+    } else if( argc == 4 ) {
+        strncpy( locationVideoActual, argv[3], 300 );
+    } else if( argc == 5 ) {
+        strncpy( locationVideoActual, argv[3], 300 );
+        strncpy( locationVideoStereo, argv[4], 300 );
+    } else {
+        printf("Incorrect arguments:\n");
+        printf("Webcam: mainTracker mean.xml cov.xml\n");
+        printf("2D video: mainTracker mean.xml cov.xml video.avi");
+        printf("3D video: mainTracker mean.xml cov.xml video.avi stereo.avi\n");
+        
+        exit(1);
+    }
     
-  if( argc == 3 ) {
-    printf("Running on webcam\n");
-    webcamRun = 0;
-  } else if( argc == 4 ) {
-    strncpy( locationVideoActual, argv[3], 300 );
-  } else if( argc == 5 ) {
-    strncpy( locationVideoActual, argv[3], 300 );
-    strncpy( locationVideoStereo, argv[4], 300 );
+    
+    if( *webcamRun ) {
+        *capture       = cvCaptureFromCAM(0);
+        *stereoCapture = cvCreateFileCapture( "nonexistantfile.avi" );
+    } else {
+        *capture       = cvCreateFileCapture( locationVideoActual );
+        *stereoCapture = cvCreateFileCapture( locationVideoStereo );
+    }
+    
+    if ( !*capture ) {
+       fprintf( stderr, "Cannot open regular video file\n" );
+       exit(1);
   } else {
-    printf("Incorrect arguments:\n");
-    printf("Webcam: mainTracker mean.xml cov.xml\n");
-    printf("2D video: mainTracker mean.xml cov.xml video.avi");
-    printf("3D video: mainTracker mean.xml cov.xml video.avi stereo.avi\n");
-    return(0);
-  }
-    
-    
-  if( webcamRun ) {
-    capture       = cvCaptureFromCAM(0);
-    stereoCapture = cvCreateFileCapture( "nonexistantfile.avi" );
-  } else {
-    capture       = cvCreateFileCapture( locationVideoActual );
-    stereoCapture = cvCreateFileCapture( locationVideoStereo );
+       fprintf( stderr, "\nRegular video loaded ok\n" );
   }
   
-    
-  
-  /* check video files exist */
-  
-  if ( !capture ) {
-    fprintf( stderr, "Could not open webcam/video file\n" );
-    return 1;
-  }
-  
-  if ( stereoCapture ) {
+  if ( *stereoCapture ) {
     printf("Depth file found, enabling 3D tracking\n");
-    enable3D = 1;
+    *enable3D = 1;
   } else {
     fprintf( stderr, "Could not open depth file, using 2D tracking" );
-    enable3D = 0;
+    *enable3D = 0;
   }
+         
+}
+                 
+
+        
+
+
+
+int main( int argc, char *argv[] ) {
+
+    int webcamRun = 0;
+    
+    CvCapture *capture = 0;
+    CvCapture *stereoCapture = 0;
+    
+    CvCapture **cptPtr = &capture;
+    CvCapture **scptPtr = &stereoCapture;
+    
+    initCaptureFiles( argc, argv, cptPtr, scptPtr, &webcamRun, &enable3D );
+  
+  
+  
+  char locationMean[300];
+  char locationCov[300];
+  strncpy( locationMean, argv[1], 300 );
+  strncpy(  locationCov, argv[2], 300 );
+  
+  
+  
+  /* check for stereo file */  
+  
   
   
   if( !enable3D ) {
@@ -134,25 +155,12 @@ int main( int argc, char *argv[] ) {
   }
   
     
-  /* (Un)comment to allow video fast-forwarding */
+  /* Fast-forwards through the video to the action */
   int kl;
   for( kl = 0; kl < 100 && webcamRun == 0; kl++ ) {
     cvQueryFrame( capture );
     if( enable3D ) cvQueryFrame( stereoCapture );
   }
-  
-  /*
-  double framesPerSec = 10;
-  CvSize videoTrackSize = cvSize( 640, 480 );
-  CvVideoWriter* writerTracker = cvCreateVideoWriter(  
-        "trackingVideo.avi",                               
-        -1,    
-        framesPerSec,
-        videoTrackSize,
-        1
-    );
-  */
-    
     
     
   /*
@@ -160,17 +168,15 @@ int main( int argc, char *argv[] ) {
   */
   
   int maxBox[10];
-  
+  // this should be in the relevant file
   //! Create matrix files to hold intermediate calculations for likelihood
-  temp1     = cvCreateMat( 9, 1, CV_32F );
-  temp2     = cvCreateMat( 1, 9, CV_32F );
-  temp3     = cvCreateMat( 1, 9, CV_32F );
-  temp4     = cvCreateMat( 1, 1, CV_32F );
-  temp5     = cvCreateMat( 9, 9, CV_32F );
-  covTemp   = cvCreateMat( 9, 9, CV_32F );
-  meanTemp  = cvCreateMat( 9, 1, CV_32F );
-  Z         = cvCreateMat( 9, 1, CV_32F );
+  
+  
+  
+  
 
+
+  /* this should have its own matrix setup function and not be hard-coded */
   //! Create N-dimensional matrices to hold mean and cov data
   int backMeanSizes[] = {_sizeY,_sizeX,4,_numResponses};
   int backCovSizes[]  = {_sizeY,_sizeX,4,_numResponses};
@@ -181,28 +187,32 @@ int main( int argc, char *argv[] ) {
   /* Fix this */
   if( webcamRun ) {
     backMean = (CvMatND*) cvLoad( "D:/Will/Dropbox/My Dropbox/Project/Matlab/backMean.xml", NULL, NULL, NULL );
-    backCov  = (CvMatND*) cvLoad( "D:/Will/Dropbox/My Dropbox/Project/Matlab/backCov.xml",  NULL, NULL, NULL );
+    backCov  = (CvMatND*) cvLoad( "D:/Will/Dropbox/My Dropbox/Project/Matlab/backCov.xml", NULL, NULL, NULL );
   } else {
     backMean = (CvMatND*) cvLoad( locationMean, NULL, NULL, NULL );
-    backCov  = (CvMatND*) cvLoad( locationCov,  NULL, NULL, NULL );
+    backCov  = (CvMatND*) cvLoad( locationCov, NULL, NULL, NULL );
   }
+  
+  /* end here */
   
   
   CvMat *imgLikelihood = cvCreateMat( 48, 64, CV_32F );
   
-    
+
+
   img  = cvLoadImage( "foreground8/image (1).jpg", CV_LOAD_IMAGE_COLOR );
   yImg = cvLoadImage( "foreground8/image (1).jpg", CV_LOAD_IMAGE_COLOR );
   cvNamedWindow( "Tracker", CV_WINDOW_AUTOSIZE );
   
   
-  
-  /* Condensation */
+  /* Condensation stuff */
   ConDens = cvCreateConDensation( DP, MP, nSamples );
+  
   bx = 320; by = 240;
+	//hm = 0; //vm = 0;
 
   /* Initialize the random number generator */
-  rng_state = cvRNG(0xffffffff);
+	rng_state = cvRNG(0xffffffff);
  
   initializeCondensation();
   
@@ -217,7 +227,6 @@ int main( int argc, char *argv[] ) {
   cvRandInit( &(ConDens->RandS[6]),  -5,  5, 6, CV_RAND_UNI);
   cvRandInit( &(ConDens->RandS[7]),  -2,  2, 7, CV_RAND_UNI);
   
-    
   /*
     If we have depth scaling, the depth controls the width & height of the box
     So we don't want any randomness
@@ -226,7 +235,7 @@ int main( int argc, char *argv[] ) {
     cvRandInit( &(ConDens->RandS[3]),  0,  0, 3, CV_RAND_UNI);
     cvRandInit( &(ConDens->RandS[7]),  0,  0, 7, CV_RAND_UNI);
   }
-    
+
   
   IplImage* heatFrame = NULL;
   heatFrame = cvQueryFrame( capture );
@@ -234,24 +243,40 @@ int main( int argc, char *argv[] ) {
   
   
   int frameNumb = 0;
+  // int mjk;
+  // for( mjk = 0; mjk < 320; mjk++ ) {
+    // cvQueryFrame( capture );
+    // cvQueryFrame( stereoCapture );
+    // frameNumb++;
+  // }
+  
+
   
   positionFrame = cvCreateImage(cvSize(640, 510), 8, 3);
   
   
-  int trailLength   = 20;
+  int trailLength = 20;
   int planX1Pos[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int planX2Pos[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int planZ1Pos[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   int planZ2Pos[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
   
 
-  int key           = 0;
-  double totalTime  = 0;
-  int totalFrames   = 0;
+  int key = 0;
+  double totalTime = 0;
+  int totalFrames = 0;
   
   
   
   while( key != 'q' ) {
+  
+    // stopCount++;
+    // strcpy(frameNameTemp, frameName);
+    // itoa(stopCount, frameCount, 10);
+    // strcat( frameNameTemp, frameCount);
+    // strcat(frameNameTemp, ".jpg");
+    // cvSaveImage(frameNameTemp, positionFrame, 0);
+    
     
     /* Start timing */
     clock_t start = clock();
@@ -281,27 +306,21 @@ int main( int argc, char *argv[] ) {
         
         /* Compute likelihoods for new frame, using mean and cov */
         likelihood( frame, backMean, backCov, imgLikelihood );
-      
         
         /* Update the Condensation model using new likelihoods */
         updateCondensation( 0, 0, imgLikelihood, maxBox );
-        
-        
+
         /* Maybe display the Condensation particles */
         if( displayParticles ) 
           drawParticles();
-        
-        
+
         /* Draw tracking boxes onto the video and stereo video frame */
         drawTrackingBoxes( 0, maxBox, frame, stereoFrame );
         drawTrackingBoxes( 1, maxBox, frame, stereoFrame );
-        
 
         /* Show the latest video frame (with boxes and particles) */
         cvShowImage( "Tracker", frame );
-        
-        
-        
+
         /* Maybe show latest stereo depth frame */
         if( displayStereoFrame )
           cvShowImage( "Stereo", stereoFrame );
@@ -313,13 +332,11 @@ int main( int argc, char *argv[] ) {
                              planX1Pos, planX2Pos, planZ1Pos, 
                              planZ2Pos, positionFrame );
         
-        
         /* Maybe show the heat map of the input image (the likelihood for each patch) */
         if( displayHeatFrame ) {
           drawHeatmap( maxBox, imgLikelihood, heatFrame );
           cvShowImage( "Heat", heatFrame );
         }
-        
         
         /* Update previous x, y positions */
         prevX[0] = maxBox[0]; prevY[0] = maxBox[1];
@@ -354,14 +371,15 @@ int main( int argc, char *argv[] ) {
   
   printf("\n\nquitting");
 
-  cvReleaseImage( &img );
-  cvReleaseImage( &frame );
-  cvDestroyWindow( "Tracker" );
-  cvDestroyWindow( "Heat" );
-  cvDestroyWindow( "Stereo" );
-  cvDestroyWindow( "Position" );
+//cvReleaseVideoWriter( &writerTracker );
+cvReleaseImage( &img );
+cvReleaseImage( &frame );
+cvDestroyWindow( "Tracker" );
+cvDestroyWindow( "Heat" );
+cvDestroyWindow( "Stereo" );
+cvDestroyWindow( "Position" );
 
-  return(0);
+return(0);
 
 }
 
@@ -480,7 +498,6 @@ void drawTrackingBoxes( int personNum, int maxBox[10], IplImage* frame, IplImage
 }
 
 
-
 //! Displays the likelihood of each patch. Ligher = more likely to be foreground object
 void drawHeatmap( int maxBox[10], CvMat* imgLikelihood, IplImage* heatFrame ) {
   
@@ -522,6 +539,18 @@ void drawHeatmap( int maxBox[10], CvMat* imgLikelihood, IplImage* heatFrame ) {
               
     }
   }
+  
+  
+  // draw tracking rectanges - different to the others in that they will always be there
+  // even if we haven't found an object to track
+  /* Don't need to be shown in the final version */
+  /*
+  cvRectangle(heatFrame, cvPoint(maxBox[0], maxBox[1] ), cvPoint(maxBox[0] + maxBox[2], maxBox[1] + maxBox[3] ), CV_RGB ( 255, 255, 255 ),1, 8, 0);
+  cvRectangle(heatFrame, cvPoint( maxBox[0] + ( maxBox[2]/3 ), maxBox[1] - ( maxBox[3]/4 ) ), cvPoint( maxBox[0] + ( 2*maxBox[2]/3 ), maxBox[1] ), CV_RGB ( 255, 255, 255 ),1, 8, 0);
+
+  cvRectangle(heatFrame, cvPoint(maxBox[4], maxBox[5] ), cvPoint(maxBox[4] + maxBox[6], maxBox[5] + maxBox[7] ), CV_RGB ( 255, 0, 0 ),1, 8, 0);
+  cvRectangle(heatFrame, cvPoint( maxBox[4] + ( maxBox[6]/3 ), maxBox[5] - ( maxBox[7]/4 ) ), cvPoint( maxBox[4] + ( 2*maxBox[6]/3 ), maxBox[5] ), CV_RGB ( 255, 0, 0 ),1, 8, 0);
+  */
           
 }
 

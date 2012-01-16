@@ -1,5 +1,5 @@
 /*
-  imageLikelihood.c
+  imageLikelihood.c 
   
   Takes an input image, along with backMean and backCov
   Returns a 48x64 likelihood matrix of each patch in the image being background
@@ -47,6 +47,14 @@ void responsePatch( IplImage* img, int xPatch, int yPatch, float response[9] ) {
       response[0] = (float)response[0] + (int)getP( img, xPos, yPos, 2 );
       
       /*
+        Mexican response
+      */
+      // response[5] = ( (int)getP( img, xPos, yPos, 0 ) * mexican[y][x] ) + response[5];
+      // response[4] = ( (int)getP( img, xPos, yPos, 1 ) * mexican[y][x] ) + response[4];
+      // response[3] = ( (int)getP( img, xPos, yPos, 2 ) * mexican[y][x] ) + response[3];
+      
+      
+      /*
         Horizontal response
       */
       if( y < 5 ) {
@@ -80,6 +88,8 @@ void responsePatch( IplImage* img, int xPatch, int yPatch, float response[9] ) {
   response[1] = response[1] / 100.0;
   response[2] = response[2] / 100.0;  
   
+ 
+  
 } 
 
 
@@ -110,11 +120,23 @@ float patchLikelihood( int xPatch, int yPatch, float response[9], CvMatND *backM
     temp4 = temp4/100;
   */
   
-  cvZero( covTemp );
+  
   float returnVal = 0;
   int i, j, k, clusterNum;
   int meanIndex[] = { yPatch, xPatch, 0, 0 };
   int covIndex[] = { yPatch, xPatch, 0, 0, 0 };
+  
+  
+  CvMat* temp1 = cvCreateMat( 9, 1, CV_32F );
+  CvMat* temp2 = cvCreateMat( 1, 9, CV_32F );
+  CvMat* temp3 = cvCreateMat( 1, 9, CV_32F );
+  CvMat* temp4 = cvCreateMat( 1, 1, CV_32F );
+  CvMat* temp5 = cvCreateMat( 9, 9, CV_32F );
+  CvMat* covTemp = cvCreateMat( 9, 9, CV_32F );
+  CvMat *Z = cvCreateMat( 9, 1, CV_32F );
+  CvMat *meanTemp = cvCreateMat( 9, 1, CV_32F );
+  
+  cvZero( covTemp );
   
   
   // There are 4 clusters, run for each
@@ -202,6 +224,11 @@ float patchLikelihood( int xPatch, int yPatch, float response[9], CvMatND *backM
 
 
 
+
+
+
+
+
 /*
   For each patch (64x48), calculate the response vector
   Then calculate and store the likelihood of that patch being background
@@ -220,10 +247,13 @@ int likelihood( IplImage *img, CvMatND *backMean, CvMatND *backCov, CvMat *imgLi
   /* Leave in if using YCrCb, comment out otherwise */
   cvCvtColor( img, yImg, CV_RGB2YCrCb );
   
-    
+
+  // for( yPatch = 0; yPatch < _sizeY; yPatch++,yPatch++ ) {
+    // for( xPatch = 0; xPatch < _sizeX; xPatch++,xPatch++ ) {
   for( yPatch = 0; yPatch < _sizeY; yPatch++ ) {
     for( xPatch = 0; xPatch < _sizeX; xPatch++ ) {
 
+        
         // Calculates the response vector
         /* Leave in if using YCrCb, comment out otherwise */
         responsePatch( yImg, xPatch, yPatch, classImg[yPatch][xPatch] );
@@ -239,6 +269,11 @@ int likelihood( IplImage *img, CvMatND *backMean, CvMatND *backCov, CvMat *imgLi
           patchVal = 10000;
 
         cvSetReal2D( imgLikelihood, yPatch, xPatch, patchVal );
+        
+        
+        // cvSetReal2D( imgLikelihood, yPatch, xPatch+1, patchVal );
+        // cvSetReal2D( imgLikelihood, yPatch+1, xPatch, patchVal );
+        // cvSetReal2D( imgLikelihood, yPatch+1, xPatch+1, patchVal );
       
     }
   }

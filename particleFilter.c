@@ -58,15 +58,15 @@ void initializeCondensation() {
 
   //! Set minima & maxima values to generate samples within
   
-  low->data.fl[0]   = 0;            up->data.fl[0]  = img->width;
-  low->data.fl[1]   = 0;            up->data.fl[1]  = img->height/2;
-  low->data.fl[2]   = minWidth;     up->data.fl[2]  = maxWidth;
-  low->data.fl[3]   = minHeight;    up->data.fl[3]  = maxHeight;
+  low->data.fl[0]=0; up->data.fl[0]= img->width;
+  low->data.fl[1]=0; up->data.fl[1]= img->height/2;
+  low->data.fl[2]=minWidth; up->data.fl[2]= maxWidth;
+  low->data.fl[3]=minHeight; up->data.fl[3]= maxHeight;
   
-  low->data.fl[4]   = 0;            up->data.fl[4]  = img->width;
-  low->data.fl[5]   = 0;            up->data.fl[5]  = img->height/2;
-  low->data.fl[6]   = minWidth;     up->data.fl[6]  = maxWidth;
-  low->data.fl[7]   = minHeight;    up->data.fl[7]  = maxHeight;
+  low->data.fl[4]=0; up->data.fl[4]= img->width;
+  low->data.fl[5]=0; up->data.fl[5]= img->height/2;
+  low->data.fl[6]=minWidth; up->data.fl[6]= maxWidth;
+  low->data.fl[7]=minHeight; up->data.fl[7]= maxHeight;
   
   
   //! Initialise Condensation!
@@ -85,8 +85,8 @@ void drawParticles( ) {
   int i;
   for( i = 0; i < ConDens->SamplesNum && stateDraw; i++ ) {
     
-    cvCircle( frame, cvPoint( (int) ConDens->flSamples[i][0], (int) ConDens->flSamples[i][1] ), ConDens->flConfidence[i]/1000, CV_RGB ( 255, 250, 135 ) , 1, 8, 0 );
-    cvCircle( frame, cvPoint( (int) ConDens->flSamples[i][4], (int) ConDens->flSamples[i][5] ), ConDens->flConfidence[i]/1000, CV_RGB ( 255,   0,   0 ) , 1, 8, 0 );
+    cvCircle(frame, cvPoint((int) ConDens->flSamples[i][0], (int) ConDens->flSamples[i][1] ) , ConDens->flConfidence[i]/1000, CV_RGB ( 255, 250, 135 ) , 1,8,0);
+    cvCircle(frame, cvPoint((int) ConDens->flSamples[i][4], (int) ConDens->flSamples[i][5] ) , ConDens->flConfidence[i]/1000, CV_RGB ( 255, 0, 0 ) , 1,8,0);
   
   }
 
@@ -106,20 +106,21 @@ void drawParticles( ) {
 void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
 
 		
-    int i, j;
-    int high = 0;
+		int i, j;
+		int high = 0;
     int tempPerson[2];
     int isIntersection;
-    int sampleX,     sampleY;
+		int sampleX, sampleY;
     int sampleWidth, sampleHeight;
-    
     int occlusionCalc;
-    int occlusionDetected   = 0;
-    int footP               = 0, 
-    int footQ               = 0;
+    int occlusionDetected = 0;
+    int footP = 0, footQ = 0;
 		
     float p[2];
     float one, two;
+    
+    //int x1, x2, y1, y2;
+    //int width1, width2, height1, height2;
     
     int xx[2], yy[2];
     int width[2], height[2];
@@ -139,7 +140,6 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
     red[2]   = 0;
     red[3]   = 0;
     red[4]   = 0;
-    
     /*
       For every particle, re-weight new position
     */
@@ -148,7 +148,13 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
       p[0] = 1.0f;
       p[1] = 1.0f;
       
-            
+      // int mpk;
+      // for( mpk = 0; mpk < 8; mpk++ ) {
+        // if( (int)ConDens->flSamples[i][mpk]%2 != 0 )
+          // ConDens->flSamples[i][mpk] = ConDens->flSamples[i][mpk]+1;
+      // }
+              
+       
       /* 
         Big chunk of code that calculates the value inside the box
           does head and body boxes and then averages them out.
@@ -157,14 +163,14 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
       boxMethod( p, 0, i, lastPerson, depth, A1 );
       boxMethod( p, 1, i, lastPerson, depth, A1 );
       
-      xx[0]     = ConDens->flSamples[i][0];
-      width[0]  = ConDens->flSamples[i][2];
-      xx[1]     = ConDens->flSamples[i][4];
-      width[1]  = ConDens->flSamples[i][6];
+      xx[0] = ConDens->flSamples[i][0];
+      width[0] = ConDens->flSamples[i][2];
+      xx[1] = ConDens->flSamples[i][4];
+      width[1] = ConDens->flSamples[i][6];
       
-      yy[0]     = ConDens->flSamples[i][1];
+      yy[0] = ConDens->flSamples[i][1];
       height[0] = ConDens->flSamples[i][3];
-      yy[1]     = ConDens->flSamples[i][5];
+      yy[1] = ConDens->flSamples[i][5];
       height[1] = ConDens->flSamples[i][7];
       
       
@@ -186,11 +192,14 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
       /* Check that the boxes haven't moved too much */
       if( abs( prevX[0] - ConDens->flSamples[i][0] ) > 200 ) {
         white[1]++;
-        p[0] = p[0] * 0.3;
+        // cvCircle(frame, cvPoint((int) ConDens->flSamples[i][0], (int) ConDens->flSamples[i][1] ) , 5, CV_RGB ( 255, 255, 255) , 1,8,0);
+
+        p[0] = p[0]*0.3;
       }
       if( abs( prevX[1] - ConDens->flSamples[i][4] ) > 200 ) {
         red[1]++;
-        p[1] = p[1] * 0.3;
+          // cvCircle(frame, cvPoint((int) ConDens->flSamples[i][4], (int) ConDens->flSamples[i][5] ) , 5, CV_RGB ( 0, 0, 0 ) , 1,8,0);
+        p[1] = p[1]*0.3;
       }
       
       
@@ -200,7 +209,6 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
       } else {
         occlusionCalc = abs( prevX[1] + width[1] - prevX[0] );
       }
-            
       
       /*
         do occlusion reasoning
@@ -227,6 +235,7 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
          
       
       /* Looks for intersection between the boxes */
+      
       if( ( xx[0] <= xx[1] && xx[1] <= xx[0] + width[0] ) // x1 < x2 < x1+width1
         | ( xx[0] <= xx[1] + width[1] && xx[1] + width[1] <= xx[0] + width[0] ) // x1 < x2+width2 < x1+width1
         
@@ -264,9 +273,11 @@ void updateCondensation( int x, int y, CvMat* A1, int maxBox[10] ) {
       }
         
 
+      
       /* Models the motion of each person and 'guards' their territory */
       motionModel( p, i, prevX, prevSpeed, tempPerson );
        
+
         
       ConDens->flConfidence[i] = 0; tempPerson[0] = 0; tempPerson[1] = 0; numTempPeople = 0;
       /* If no intersection, then make sure prob > 300, and then calculate flConfidence */
